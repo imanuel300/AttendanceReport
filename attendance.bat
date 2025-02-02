@@ -1,6 +1,7 @@
 @echo off
 chcp 65001 > nul
 cls
+setlocal EnableDelayedExpansion
 
 :: הגדרת נתיב לקובץ CSV
 set "CSV_FILE=%USERPROFILE%\Documents\attendance_log.bat.csv"
@@ -64,16 +65,16 @@ exit /b
 
 :edit_last
 :: קריאת השורה האחרונה
-for /f "delims=" %%a in ('type "%CSV_FILE%" ^| find /v /c ""') do set total_lines=%%a
-if %total_lines% leq 1 (
+set "last_line="
+for /f "delims=" %%a in ('type "%CSV_FILE%"') do set "last_line=%%a"
+
+if "%last_line%"=="" (
     echo אין רשומות לעריכה!
     exit /b
 )
 
 :: הצגת הרשומה האחרונה
-for /f "delims=" %%a in ('type "%CSV_FILE%" ^| tail -1') do (
-    echo הרשומה האחרונה: %%a
-)
+echo הרשומה האחרונה: %last_line%
 
 :: קבלת שעה חדשה
 set /p new_time="הכנס שעה חדשה (בפורמט HH:MM:SS): "
@@ -86,13 +87,22 @@ if errorlevel 1 (
 )
 
 :: עדכון הקובץ
+set "temp_file=%CSV_FILE%.tmp"
+set "skip_last=0"
 for /f "delims=" %%a in ('type "%CSV_FILE%"') do (
-    set "line=%%a"
-    if not "!line!"=="" (
-        echo !line!>> "%CSV_FILE%.tmp"
+    set "current_line=%%a"
+    if "!skip_last!"=="0" (
+        if "!current_line!"=="!last_line!" (
+            for /f "tokens=1,3 delims=," %%b in ("!last_line!") do (
+                echo %%b,%new_time%,%%c>> "!temp_file!"
+            )
+            set "skip_last=1"
+        ) else (
+            echo !current_line!>> "!temp_file!"
+        )
     )
 )
 
-move /y "%CSV_FILE%.tmp" "%CSV_FILE%" >nul
+move /y "%temp_file%" "%CSV_FILE%" >nul
 echo העדכון בוצע בהצלחה!
 exit /b 
