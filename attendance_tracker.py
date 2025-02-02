@@ -50,6 +50,11 @@ def edit_last_record():
         print("אין רשומות לעריכה!")
 
 def main():
+    # קידוד נכון לעברית בחלון הקונסול
+    if os.name == 'nt':  # Windows
+        os.system('chcp 65001')
+        os.system('cls')
+    
     initialize_csv()
     
     while True:
